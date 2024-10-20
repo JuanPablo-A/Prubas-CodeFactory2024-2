@@ -1,0 +1,34 @@
+name: Vercel Production Deployment
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID_GESTION_VUELOS_B }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_GESTION_VUELOS_B }}
+
+on: [push]
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gestion-de-vuelos-B'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 20.x
+      - name: Install dependencies
+        run: yarn install
+      - name: Build
+        run: yarn build
+
+  Deploy-Production:
+    needs: Build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gestion-de-vuelos-B'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --token=${{ secrets.VERCEL_TOKEN_GESTION_VUELOS_B }}
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prod --no-wait --token=${{ secrets.VERCEL_TOKEN_GESTION_VUELOS_B }}
