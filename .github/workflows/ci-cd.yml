@@ -20,8 +20,34 @@ jobs:
       - name: Build
         run: yarn build
 
-  Deploy-Production:
+  Sonarcloud-Analysis:
     needs: Build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gestion-de-vuelos-B'
+    steps:
+      - uses: actions/checkout@v2
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=JuanPablo-A_Prubas-CodeFactory2024-2
+            -Dsonar.organization=juanpablo-a
+            -Dsonar.sources=.
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.exclusions=**/node_modules/**,**/coverage/**,**/build/**
+            -Dsonar.coverage.exclusions=**/node_modules/**,**/coverage/**,**/build/**
+            -Dsonar.test.exclusions=**/node_modules/**,**/coverage/**,**/build/**
+            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.projectBaseDir=.
+            -Dsonar.projectName=gestion-de-vuelos-B
+            -Dsonar.projectVersion=1.0
+
+  Deploy-Production:
+    needs: Sonarcloud-Analysis
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/gestion-de-vuelos-B'
     steps:
