@@ -34,8 +34,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getAllFlights } from "@/services/gestion-vuelos-b/flights";
-import { useQuery } from "react-query";
+import {
+  deleteFlight,
+  getAllFlights,
+} from "@/services/gestion-vuelos-b/flights";
+import { useMutation, useQuery } from "react-query";
 import type { Flight } from "@/services/gestion-vuelos-b/types";
 import {
   EyeIcon,
@@ -54,161 +57,215 @@ import {
 } from "@/components/ui/pagination";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-
-export const columns: ColumnDef<Flight>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "flightNumber",
-    id: "número de vuelo",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Número de vuelo
-          <CaretSortIcon className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="capitalize">{row.original.flightNumber}</div>
-    ),
-  },
-  {
-    accessorKey: "status",
-    id: "estado",
-    header: () => <div className="text-right">Estado</div>,
-    cell: ({ row }) => {
-      return (
-        <div className="w-full inline-flex justify-end">
-          <Badge variant="secondary">{row.original.status.statusName}</Badge>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "flightType",
-    id: "tipo de vuelo",
-    header: () => <div className="text-right">Tipo de vuelo</div>,
-    cell: ({ row }) => {
-      return (
-        <div className="w-full inline-flex justify-end">
-          <Badge>{row.original.flightType.name}</Badge>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "origin.airportName",
-    id: "origen",
-    header: () => <div className="text-right">Origen</div>,
-    cell: ({ row }) => {
-      return <div className="text-right">{row.original.origin.iataCode}</div>;
-    },
-  },
-  {
-    accessorKey: "destination.airportName",
-    id: "destino",
-    header: () => <div className="text-right">Destino</div>,
-    cell: ({ row }) => {
-      return (
-        <div className="text-right">{row.original.destination.iataCode}</div>
-      );
-    },
-  },
-  {
-    accessorKey: "departureDate",
-    id: "fecha de salida",
-    header: () => <div className="text-right">Fecha de salida</div>,
-    cell: ({ row }) => {
-      return (
-        <div className="text-right">
-          {new Intl.DateTimeFormat("es", {
-            month: "short",
-            day: "2-digit",
-          }).format(new Date(row.original.departureDate))}{" "}
-          {row.original.departureTime}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "arrivalDate",
-    id: "fecha de llegada",
-    header: () => <div className="text-right">Fecha de llegada</div>,
-    cell: ({ row }) => {
-      return (
-        <div className="text-right">
-          {new Intl.DateTimeFormat("es", {
-            month: "short",
-            day: "2-digit",
-          }).format(new Date(row.original.arrivalDate))}{" "}
-          {row.original.arrivalTime}
-        </div>
-      );
-    },
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({}) => {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Abrir Menu</span>
-              <DotsHorizontalIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-            <DropdownMenuItem className="inline-flex items-center w-full">
-              <PenIcon className="h-4 w-4 mr-2" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem className="inline-flex items-center w-full">
-              <EyeIcon className="h-4 w-4 mr-2" />
-              Ver detalles
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="inline-flex items-center w-full text-red-500 sm:hover:text-red-700 sm:hover:bg-red-100">
-              <TrashIcon className="h-4 w-4 mr-2" />
-              Eliminar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import ConfirmDialog from "@/components/confirm-dialog";
+import { useToast } from "@/hooks/use-toast";
+import FlightDetails from "@/components/gestion-vuelos-b/flight-details";
+import { useRouter } from "next/router";
 
 export default function FlightsPage() {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const [flightDetailsId, setFlightDetailsId] = React.useState<string | null>(
+    null
+  );
+
   const query = useQuery({
     queryKey: "flights",
     queryFn: getAllFlights,
   });
+
+  const deleteFlightMutation = useMutation(deleteFlight, {
+    onSuccess: () => {
+      toast({
+        title: "¡Éxito!",
+        description: "Vuelo eliminado exitosamente",
+      });
+      query.refetch();
+    },
+    onError: () => {
+      toast({
+        title: "Algo salió mal",
+        description: "No se pudo eliminar el vuelo",
+      });
+    },
+  });
+
+  const columns: ColumnDef<Flight>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "flightNumber",
+      id: "número de vuelo",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Número de vuelo
+            <CaretSortIcon className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="capitalize">{row.original.flightNumber}</div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      id: "estado",
+      header: () => <div className="text-right">Estado</div>,
+      cell: ({ row }) => {
+        return (
+          <div className="w-full inline-flex justify-end">
+            <Badge variant="secondary">{row.original.status.statusName}</Badge>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "flightType",
+      id: "tipo de vuelo",
+      header: () => <div className="text-right">Tipo de vuelo</div>,
+      cell: ({ row }) => {
+        return (
+          <div className="w-full inline-flex justify-end">
+            <Badge>{row.original.flightType.name}</Badge>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "origin.airportName",
+      id: "origen",
+      header: () => <div className="text-right">Origen</div>,
+      cell: ({ row }) => {
+        return <div className="text-right">{row.original.origin.iataCode}</div>;
+      },
+    },
+    {
+      accessorKey: "destination.airportName",
+      id: "destino",
+      header: () => <div className="text-right">Destino</div>,
+      cell: ({ row }) => {
+        return (
+          <div className="text-right">{row.original.destination.iataCode}</div>
+        );
+      },
+    },
+    {
+      accessorKey: "departureDate",
+      id: "fecha de salida",
+      header: () => <div className="text-right">Fecha de salida</div>,
+      cell: ({ row }) => {
+        return (
+          <div className="text-right">
+            {new Intl.DateTimeFormat("es", {
+              month: "short",
+              day: "2-digit",
+            }).format(new Date(row.original.departureDate))}{" "}
+            {row.original.departureTime}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "arrivalDate",
+      id: "fecha de llegada",
+      header: () => <div className="text-right">Fecha de llegada</div>,
+      cell: ({ row }) => {
+        return (
+          <div className="text-right">
+            {new Intl.DateTimeFormat("es", {
+              month: "short",
+              day: "2-digit",
+            }).format(new Date(row.original.arrivalDate))}{" "}
+            {row.original.arrivalTime}
+          </div>
+        );
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        return (
+          <Dialog>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0" id="actions">
+                  <span className="sr-only">Abrir Menu</span>
+                  <DotsHorizontalIcon className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" id="actions-dropdown">
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={() => router.push(`/gestion-vuelos-b/flights/edit/${row.original.id}`)}
+                  className="inline-flex items-center w-full"
+                  id="edit"
+                >
+                  <PenIcon className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  id="view-details"
+                  className="inline-flex items-center w-full"
+                  onClick={() => {
+                    setFlightDetailsId(row.original.id);
+                  }}
+                >
+                  <EyeIcon className="h-4 w-4 mr-2" />
+                  Ver detalles
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DialogTrigger asChild>
+                  <DropdownMenuItem
+                    className="inline-flex items-center w-full text-red-500 sm:hover:text-red-700 sm:hover:bg-red-100"
+                    id="delete"
+                  >
+                    <TrashIcon className="h-4 w-4 mr-2" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </DialogTrigger>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <ConfirmDialog
+              onConfirm={() => {
+                deleteFlightMutation.mutate(row.original.id);
+              }}
+              titleMessage="¿Estás seguro de que deseas eliminar este vuelo?"
+              descriptionMessage={`Si seleccionas 'Eliminar', el vuelo con número de vuelo '${row.original.flightNumber}' será eliminado y no podrás recuperarlo.`}
+              confirmLabel="Eliminar"
+              confirmButtonId="confirm-delete-flight"
+            />
+          </Dialog>
+        );
+      },
+    },
+  ];
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -260,6 +317,7 @@ export default function FlightsPage() {
           <div className="flex gap-4 items-center">
             <Link href="flights/create">
               <Button
+                id="create-flight"
                 variant="default"
                 className="inline-flex items-center gap-2"
               >
@@ -318,6 +376,7 @@ export default function FlightsPage() {
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
+                    id={row.original.flightNumber}
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
                   >
@@ -375,6 +434,18 @@ export default function FlightsPage() {
           </div>
         </div>
       </div>
+      {flightDetailsId !== null && (
+        <Dialog
+          open={flightDetailsId !== null}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              setFlightDetailsId(null);
+            }
+          }}
+        >
+          <FlightDetails flightId={flightDetailsId} />
+        </Dialog>
+      )}
     </>
   );
 }
