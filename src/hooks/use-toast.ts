@@ -71,6 +71,13 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
+/**
+ * useToast Hook
+ * 
+ * A custom React hook for managing toast notifications.
+ * 
+ * @returns {State} The state object containing the toasts and the reducer function.
+ */
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
