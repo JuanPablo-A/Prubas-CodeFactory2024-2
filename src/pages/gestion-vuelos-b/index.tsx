@@ -1,9 +1,6 @@
 import Navbar from "@/components/navbar";
 import Link from "next/link";
-import {
-  GlobeIcon,
-  PlaneIcon
-} from "lucide-react";
+import { GlobeIcon, PlaneIcon } from "lucide-react";
 
 export default function FlightManagement() {
   return (
@@ -13,6 +10,7 @@ export default function FlightManagement() {
         <h1 className="text-4xl my-4 font-bold">Gestión de Vuelos</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <Link
+            id="link-to-flights"
             href="/gestion-vuelos-b/flights"
             className="relative overflow-hidden p-4 rounded-lg flex items-center gap-4 text-gray-700 border border-gray-300 hover:border-primary hover:shadow-lg hover:shadow-blue-100 transition-all"
           >
@@ -25,6 +23,7 @@ export default function FlightManagement() {
             </div>
           </Link>
           <Link
+            id="link-to-airplane-types"
             href="/gestion-vuelos-b/airplane-types"
             className="relative overflow-hidden p-4 rounded-lg flex items-center gap-4 text-gray-700 border border-gray-300 hover:border-primary hover:shadow-lg hover:shadow-blue-100 transition-all"
           >
