@@ -63,10 +63,7 @@ export default function EditAirplaneTypePage() {
       <Navbar />
       <main className="flex flex-col gap-6 w-full p-4 sm:p-12">
         <h1 className="text-4xl font-bold">Editar tipo de aeronave</h1>
-        <div
-          className="flex relative flex-col items-start gap-8"
-          x-chunk="dashboard-03-chunk-0"
-        >
+        <div className="flex relative flex-col items-start gap-8">
           {isLoading ? (
             <div className="w-full flex justify-center items-center py-8">
               <LoaderCircleIcon size={16} className="animate-spin mr-2" />

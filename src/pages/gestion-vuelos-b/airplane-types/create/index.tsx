@@ -38,10 +38,7 @@ export default function CreateAirplaneTypePage() {
       <Navbar />
       <main className="flex flex-col gap-6 w-full p-4 sm:p-12">
         <h1 className="text-4xl font-bold">Agregar aeronave</h1>
-        <div
-          className="flex relative flex-col items-start gap-8"
-          x-chunk="dashboard-03-chunk-0"
-        >
+        <div className="flex relative flex-col items-start gap-8">
           <AirplaneForm sendDataMutation={createAirplaneTypeMutation} />
         </div>
       </main>
