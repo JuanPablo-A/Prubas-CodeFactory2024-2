@@ -1,5 +1,5 @@
 import { GraphQLClient } from "graphql-request";
-import { AirplaneType, Type } from "./types";
+import { AirplaneType, AirplaneTypePayload, Type } from "./types";
 
 // You can replace this with your actual backend GraphQL API endpoint
 const API_URL =
@@ -30,7 +30,7 @@ export const getAllAirplaneTypes = async () => {
 
 export const getAirplaneTypeById = async (id: string) => {
   const query = `
-    query($id: ID!) {
+    query($id: String!) {
       getAirplaneTypeById(id: $id) {
         id
         type {
@@ -43,10 +43,9 @@ export const getAirplaneTypeById = async (id: string) => {
     }
   `;
   const variables = { id };
-  const response: Record<string, string> = await gqlClient.request(
-    query,
-    variables
-  );
+  const response: {
+    getAirplaneTypeById: AirplaneType;
+  } = await gqlClient.request(query, variables);
   return response.getAirplaneTypeById;
 };
 
@@ -71,12 +70,7 @@ export const createAirplaneType = async ({
   typeId,
   maxSeats,
   seatsDistribution,
-}: {
-  id: string;
-  typeId: number;
-  maxSeats: number;
-  seatsDistribution: string;
-}) => {
+}: AirplaneTypePayload) => {
   const mutation = `
     mutation CreateAirplaneType($id: String!, $typeId: Int!, $maxSeats: Int!, $seatsDistribution: String!) {
       createAirplaneType(
@@ -96,29 +90,27 @@ export const createAirplaneType = async ({
     }
   `;
 
-  const variables = {
-    id,
-    typeId,
-    maxSeats,
-    seatsDistribution,
-  };
-
-  const response: Record<string, string | number> = await gqlClient.request(
-    mutation,
-    variables
-  );
+  const variables = { id, typeId, maxSeats, seatsDistribution };
+  const response: {
+    createAirplaneType: AirplaneType;
+  } = await gqlClient.request(mutation, variables);
 
   return response.createAirplaneType;
 };
 
-export const updateAirplaneType = async (input: string) => {
+export const updateAirplaneType = async ({
+  id,
+  typeId,
+  maxSeats,
+  seatsDistribution,
+}: AirplaneTypePayload) => {
   const mutation = `
-    mutation($input: UpdateAirplaneTypeInput!) {
+    mutation($id: String!, $typeId: ID!, $maxSeats: Int!, $seatsDistribution: String!) {
       updateAirplaneType(
-        id: $input.id,
-        typeId: $input.typeId,
-        maxSeats: $input.maxSeats,
-        seatsDistribution: $input.seatsDistribution
+        id: $id,
+        typeId: $typeId,
+        maxSeats: $maxSeats,
+        seatsDistribution: $seatsDistribution
       ) {
         id
         type {
@@ -130,17 +122,16 @@ export const updateAirplaneType = async (input: string) => {
       }
     }
   `;
-  const variables = { input };
-  const response: Record<string, string> = await gqlClient.request(
-    mutation,
-    variables
-  );
+  const variables = { id, typeId, maxSeats, seatsDistribution };
+  const response: {
+    updateAirplaneType: AirplaneType;
+  } = await gqlClient.request(mutation, variables);
   return response.updateAirplaneType;
 };
 
-export const deleteAirplaneType = async (id: number) => {
+export const deleteAirplaneType = async (id: string) => {
   const mutation = `
-    mutation($id: ID!) {
+    mutation($id: String!) {
       deleteAirplaneType(id: $id)
     }
   `;

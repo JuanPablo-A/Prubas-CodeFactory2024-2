@@ -25,6 +25,14 @@ interface AirplaneType {
   seatsDistribution: string; // Example: "2-4-2", "3-3-3"
 }
 
+// AirplaneTypePayload TypeScript Interface
+interface AirplaneTypePayload {
+  id: string;
+  typeId: number;
+  maxSeats: number;
+  seatsDistribution: string;
+}
+
 // Status TypeScript Interface
 type Status = {
   id: string;
@@ -48,3 +56,22 @@ export type Flight = {
   airplaneType: AirplaneType;
   status: Status;
 };
+
+export type FlightPayload = {
+  flightNumber: string;
+  originIata: string;
+  destinationIata: string;
+  departureDate: string;
+  arrivalDate: string;
+  departureTime: string;
+  arrivalTime: string;
+  price: number;
+  taxPercentage: number;
+  surchargePercentage: number;
+  flightTypeId: string;
+  airplaneTypeId: string;
+  statusId: string;
+}
+export type FlightUpdatePayload = FlightPayload & {
+  id: string;
+}

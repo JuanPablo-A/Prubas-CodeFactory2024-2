@@ -1,5 +1,5 @@
 import { GraphQLClient } from "graphql-request";
-import { Flight } from "./types.d";
+import { Flight, FlightPayload, FlightUpdatePayload } from "./types.d";
 
 // You can replace this with your actual backend GraphQL API endpoint
 const API_URL =
@@ -101,28 +101,13 @@ export const getFlightById = async (id: string) => {
     }
   `;
   const variables = { id };
-  const response: Record<string, string> = await gqlClient.request(
-    query,
-    variables
-  );
+  const response: {
+    getFlightById: Flight;
+  } = await gqlClient.request(query, variables);
   return response.getFlightById;
 };
 
-export const createFlight = async (input: {
-  flightNumber: string;
-  originIata: string;
-  destinationIata: string;
-  departureDate: string;
-  arrivalDate: string;
-  departureTime: string;
-  arrivalTime: string;
-  price: number;
-  taxPercentage: number;
-  surchargePercentage: number;
-  flightTypeId: string;
-  airplaneTypeId: string;
-  statusId: string;
-}) => {
+export const createFlight = async (input: FlightPayload) => {
   const mutation = `
     mutation(
       $flightNumber: String!, 
@@ -200,24 +185,39 @@ export const createFlight = async (input: {
   return response.createFlight;
 };
 
-export const updateFlight = async (input: string) => {
+export const updateFlight = async (input: FlightUpdatePayload) => {
   const mutation = `
-    mutation($input: UpdateFlightInput!) {
+    mutation(
+      $id: ID!,
+      $flightNumber: String,
+      $originIata: String,
+      $destinationIata: String,
+      $departureDate: String,
+      $arrivalDate: String,
+      $departureTime: String,
+      $arrivalTime: String,
+      $price: Float,
+      $taxPercentage: Float,
+      $surchargePercentage: Float,
+      $flightTypeId: ID,
+      $airplaneTypeId: ID,
+      $statusId: ID
+    ) {
       updateFlight(
-        id: $input.id,
-        flightNumber: $input.flightNumber,
-        originIata: $input.originIata,
-        destinationIata: $input.destinationIata,
-        departureDate: $input.departureDate,
-        arrivalDate: $input.arrivalDate,
-        departureTime: $input.departureTime,
-        arrivalTime: $input.arrivalTime,
-        price: $input.price,
-        taxPercentage: $input.taxPercentage,
-        surchargePercentage: $input.surchargePercentage,
-        flightTypeId: $input.flightTypeId,
-        airplaneTypeId: $input.airplaneTypeId,
-        statusId: $input.statusId
+        id: $id,
+        flightNumber: $flightNumber,
+        originIata: $originIata,
+        destinationIata: $destinationIata,
+        departureDate: $departureDate,
+        arrivalDate: $arrivalDate,
+        departureTime: $departureTime,
+        arrivalTime: $arrivalTime,
+        price: $price,
+        taxPercentage: $taxPercentage,
+        surchargePercentage: $surchargePercentage,
+        flightTypeId: $flightTypeId,
+        airplaneTypeId: $airplaneTypeId,
+        statusId: $statusId
       ) {
         id
         flightNumber
@@ -258,15 +258,14 @@ export const updateFlight = async (input: string) => {
       }
     }
   `;
-  const variables = { input };
-  const response: Record<string, string> = await gqlClient.request(
-    mutation,
-    variables
-  );
+
+  const variables = { ...input };
+  
+  const response: Record<string, string> = await gqlClient.request(mutation, variables);
   return response.updateFlight;
 };
 
-export const deleteFlight = async (id: number) => {
+export const deleteFlight = async (id: string) => {
   const mutation = `
     mutation($id: ID!) {
       deleteFlight(id: $id)
